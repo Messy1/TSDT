@@ -110,4 +110,46 @@ class NewVisitorTest(LiveServerTestCase):
 
         # 两人都很满意，然后去睡觉了
 
-        
+class NewVistorTest(LiveServerTestCase):
+    def setUp(self):
+        self.browser = webdriver.Chrome()
+
+    def tearDown(self):
+        self.browser.quit()
+
+    def wait_for_row_in_list_table(self, row_text):
+        start_time = time.time()
+        while True:
+            try:
+                table = self.browser.find_element(By.ID, 'id_list_table')
+                rows = table.find_elements(By.TAG_NAME, 'tr')
+                self.assertIn(row_text, [row.text for row in rows])
+                return
+            except (AssertionError, WebDriverException) as e:
+                if time.time() - start_time > MAX_WAIT:
+                    raise e
+                time.sleep(0.5)
+
+    def test_layout_and_styling(self):     
+        # 张三访问首页
+        self.browser.get(self.live_server_url)
+        self.browser.set_window_size(1024, 768)
+
+        # 她看到输入框完美地居中显示
+        inputbox = self.browser.find_element(By.ID, 'id_new_item')
+        self.assertAlmostEqual(
+            inputbox.location['x'] + inputbox.size['width'] / 2,
+            512,
+            delta=10
+        )
+
+        # 他新建一个清单，看到输入框仍然完美的居中显示
+        inputbox.send_keys('testing')
+        inputbox.send_keys(Keys.ENTER)
+        self.wait_for_row_in_list_table('1: testing')
+        inputbox = self.browser.find_element(By.ID, 'id_new_item')
+        self.assertAlmostEqual(
+            inputbox.location['x'] + inputbox.size['width'] / 2,
+            512,
+            delta=10
+        )
